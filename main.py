@@ -160,7 +160,8 @@ def rev24(n):
 
 def data():
 
-    with open(os.path.dirname(__file__)+'\config.json') as json_file:config_file = json.load(json_file)
+    with open(os.path.relpath('config.json')) as json_file:
+        config_file = json.load(json_file)
 
     time_data = dt.now()
     year = time_data.year
