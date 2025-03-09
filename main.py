@@ -1,9 +1,13 @@
+import datetime
 import time
 import json
 import os
+import pytz
 
 from math import radians, degrees, floor, sin, cos, tan, asin, acos, atan, atan2, pi
 from datetime import datetime as dt
+
+TIMEZONE = "US/Pacific"
 
 def sunpos(when, location, refraction):
     # Extract the passed data
@@ -197,8 +201,24 @@ if __name__ == '__main__':
         sunrise_hour, sunrise_minute, sunrise_second = dms(sunrise)
         sunset_hour, sunset_minute, sunset_second = dms(sunset)
 
+        sunrise_str = f"{sunrise_hour}:{sunrise_minute}"
+        sunset_str = f"{sunset_hour}:{sunset_minute}"
+        format_str = "%H:%M"
+        sunrise_datetime = datetime.datetime.strptime(sunrise_str, format_str)
+        sunset_datetime = datetime.datetime.strptime(sunset_str, format_str)
+        sunrise_to_sunset_delta_seconds = (sunset_datetime - sunrise_datetime).total_seconds()
+        sunset_to_sunrise_delta_seconds = 86400 - sunrise_to_sunset_delta_seconds
+
+        # Get current time
+        tz = pytz.timezone(TIMEZONE)
+        now = datetime.datetime.now(tz)
+
+        # sunrise -> sunset = day
+        # sunset -> sunrise = night
+
         # Output the results
         os.system('cls')
+        print(f"Current time: {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}")
         print(f'When: {"0" if (day < 10) else ""}{day}.{"0" if (month < 10) else ""}{month}.{year} {"0" if (hour < 10) else ""}{hour}:{"0" if (minute < 10) else ""}{minute}:{"0" if (second < 10) else ""}{int(second)} UTC{"+" if (time_zone > 0) else ""}{time_zone}')
         print(f"Where: Latitude = {latitude_degree}° {latitude_minute}' "+f'{int(latitude_second)}", Longitude = {longitude_degree}° '+f"{longitude_minute}' "+f'{int(longitude_second)}"')
         print(f"Azimuth: {azimuth_degree}° {azimuth_minute}' "+f'{int(azimuth_second)}" or {round(azimuth, 4)}')
