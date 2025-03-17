@@ -3,6 +3,7 @@ import time
 import json
 import os
 import pytz
+import sys
 
 from math import radians, degrees, floor, sin, cos, tan, asin, acos, atan, atan2, pi
 from datetime import datetime as dt
@@ -181,47 +182,65 @@ def data():
     return year, month, day, hour, minute, second, time_zone, latitude, longitude
 
 if __name__ == '__main__':
-    while True:
-        # Date and location information
-        year, month, day, hour, minute, second, time_zone, latitude, longitude = data()
+    # Date and location information
+    year, month, day, hour, minute, second, time_zone, latitude, longitude = data()
 
-        # Get the Sun's apparent location in the sky
-        azimuth, elevation = sunpos((year, month, day, hour, minute, second, time_zone), (latitude, longitude), True)
+    # Get the Sun's apparent location in the sky
+    azimuth, elevation = sunpos((year, month, day, hour, minute, second, time_zone), (latitude, longitude), True)
 
-        # Degree convert to degree, minute, second
-        azimuth_degree, azimuth_minute, azimuth_second = dms(azimuth)
-        elevation_degree, elevation_minute, elevation_second = dms(elevation)
-        latitude_degree, latitude_minute, latitude_second = dms(latitude)
-        longitude_degree, longitude_minute, longitude_second = dms(longitude)
+    # Degree convert to degree, minute, second
+    azimuth_degree, azimuth_minute, azimuth_second = dms(azimuth)
+    elevation_degree, elevation_minute, elevation_second = dms(elevation)
+    latitude_degree, latitude_minute, latitude_second = dms(latitude)
+    longitude_degree, longitude_minute, longitude_second = dms(longitude)
 
-        # Get sunrise and sunset time
-        sunrise, sunset = suninfo((year, month, day, time_zone), (latitude, longitude))
+    # Get sunrise and sunset time
+    sunrise, sunset = suninfo((year, month, day, time_zone), (latitude, longitude))
 
-        # Degree convert to degree, minute, second
-        sunrise_hour, sunrise_minute, sunrise_second = dms(sunrise)
-        sunset_hour, sunset_minute, sunset_second = dms(sunset)
+    # Degree convert to degree, minute, second
+    sunrise_hour, sunrise_minute, sunrise_second = dms(sunrise)
+    sunset_hour, sunset_minute, sunset_second = dms(sunset)
 
-        sunrise_str = f"{sunrise_hour}:{sunrise_minute}"
-        sunset_str = f"{sunset_hour}:{sunset_minute}"
-        format_str = "%H:%M"
-        sunrise_datetime = datetime.datetime.strptime(sunrise_str, format_str)
-        sunset_datetime = datetime.datetime.strptime(sunset_str, format_str)
-        sunrise_to_sunset_delta_seconds = (sunset_datetime - sunrise_datetime).total_seconds()
-        sunset_to_sunrise_delta_seconds = 86400 - sunrise_to_sunset_delta_seconds
+    # Get current time
+    tz = pytz.timezone(TIMEZONE)
 
-        # Get current time
-        tz = pytz.timezone(TIMEZONE)
-        now = datetime.datetime.now(tz)
+    sunrise_str = f"{sunrise_hour}:{sunrise_minute}"
+    sunset_str = f"{sunset_hour}:{sunset_minute}"
+    midnight_str = "0:0"
+    format_str = "%H:%M"
+    now = datetime.datetime.now(tz)
+    now_datetime = datetime.datetime.strptime(f"{now.hour}:{now.minute}", format_str)
+    sunrise_datetime = datetime.datetime.strptime(sunrise_str, format_str)
+    sunset_datetime = datetime.datetime.strptime(sunset_str, format_str)
+    midnight_datetime = datetime.datetime.strptime(midnight_str, format_str)
 
-        # sunrise -> sunset = day
-        # sunset -> sunrise = night
+    midnight_to_sunrise_delta_seconds = (sunrise_datetime - midnight_datetime).total_seconds()
+    sunrise_to_sunset_delta_seconds = (sunset_datetime - sunrise_datetime).total_seconds()
+    midnight_to_now_delta_seconds = (now_datetime - midnight_datetime).total_seconds()
 
-        # Output the results
-        os.system('cls')
+    midnight_to_now = midnight_to_now_delta_seconds / 84600
+    midnight_to_sunrise = midnight_to_sunrise_delta_seconds / 84600
+    sunrise_to_sunset = sunrise_to_sunset_delta_seconds / 84600
+    sunset_to_midnight = (84600 - (midnight_to_sunrise_delta_seconds + sunrise_to_sunset_delta_seconds)) / 84600
+
+    midnight_to_now_units = int(round(midnight_to_now * 96, 0))
+    midnight_to_sunrise_units = int(round(midnight_to_sunrise * 96, 0))
+    sunrise_to_sunset_units = int(round(sunrise_to_sunset * 96, 0))
+    sunset_to_midnight_units = int(round(sunset_to_midnight * 96))
+
+    midnight_to_sunrise_formatted = ["="] * midnight_to_sunrise_units
+    sunrise_to_sunset_formatted = ["-"] * sunrise_to_sunset_units
+    sunset_to_midnight_formatted = ["="] * sunset_to_midnight_units
+    concatenated = midnight_to_sunrise_formatted + sunrise_to_sunset_formatted + sunset_to_midnight_formatted
+    concatenated.insert(midnight_to_now_units, "*")
+    del concatenated[midnight_to_now_units + 1]
+    print("".join(concatenated))
+
+    # Output the results
+    if sys.argv[-1] == "--debug":
         print(f"Current time: {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}")
         print(f'When: {"0" if (day < 10) else ""}{day}.{"0" if (month < 10) else ""}{month}.{year} {"0" if (hour < 10) else ""}{hour}:{"0" if (minute < 10) else ""}{minute}:{"0" if (second < 10) else ""}{int(second)} UTC{"+" if (time_zone > 0) else ""}{time_zone}')
         print(f"Where: Latitude = {latitude_degree}° {latitude_minute}' "+f'{int(latitude_second)}", Longitude = {longitude_degree}° '+f"{longitude_minute}' "+f'{int(longitude_second)}"')
         print(f"Azimuth: {azimuth_degree}° {azimuth_minute}' "+f'{int(azimuth_second)}" or {round(azimuth, 4)}')
         print(f"Elevation: {elevation_degree}° {elevation_minute}' "+f'{int(elevation_second)}" or {round(elevation, 4)}')
         print(f'Sunrise = {str(0)+str(sunrise_hour) if sunrise_hour//10 == 0 else sunrise_hour}:{str(0)+str(sunrise_minute) if sunrise_minute//10 == 0 else sunrise_minute}:{str(0)+str(int(sunrise_second)) if sunrise_second//10 == 0 else int(sunrise_second)}, Sunset = {str(0)+str(sunset_hour) if sunset_hour//10 == 0 else sunset_hour}:{str(0)+str(sunset_minute) if sunset_minute//10 == 0 else sunset_minute}:{str(0)+str(int(sunset_second)) if sunset_second//10 == 0 else int(sunset_second)}')
-        time.sleep(0.3)
