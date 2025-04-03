@@ -162,7 +162,7 @@ def rev360(n):
 def rev24(n):
     return  n - floor(n / 24) * 24
 
-def data():
+def current_time_data():
 
     with open(os.path.relpath('config.json')) as json_file:
         config_file = json.load(json_file)
@@ -182,7 +182,7 @@ def data():
 
 if __name__ == '__main__':
     # Date and location information
-    year, month, day, hour, minute, second, time_zone, latitude, longitude = data()
+    year, month, day, hour, minute, second, time_zone, latitude, longitude = current_time_data()
 
     # Get the Sun's apparent location in the sky
     azimuth, elevation = sunpos((year, month, day, hour, minute, second, time_zone), (latitude, longitude), True)
