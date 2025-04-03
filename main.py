@@ -201,13 +201,12 @@ if __name__ == '__main__':
     sunset_hour, sunset_minute, sunset_second = dms(sunset)
 
     # Get current time zone
-    tz = datetime.datetime.now().astimezone().tzinfo
+    tz = datetime.timezone(datetime.timedelta(hours=tz_offset_hours))
 
     sunrise_str = f"{sunrise_hour}:{sunrise_minute}"
     sunset_str = f"{sunset_hour}:{sunset_minute}"
     midnight_str = "0:0"
     format_str = "%H:%M"
-    now = datetime.datetime.now(tz)
     now_datetime = datetime.datetime.strptime(f"{now.hour}:{now.minute}", format_str)
     sunrise_datetime = datetime.datetime.strptime(sunrise_str, format_str)
     sunset_datetime = datetime.datetime.strptime(sunset_str, format_str)
