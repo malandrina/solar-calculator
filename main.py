@@ -69,7 +69,7 @@ def sunpos(when, location, refraction):
 
 def suninfo(when, location):
     # Extract the passed data
-    year, month, day, time_zone = when
+    year, month, day, tz_offset_hours = when
     latitude, longitude = location
     zenith = -0.01454389765 # official
     # zenith = -0.10452846326 # civil
@@ -137,8 +137,8 @@ def suninfo(when, location):
     ut_set = rev24(tB_set - lng_hour)
 
     # Convert UT value to local time zone of latitude/longitude
-    local_t_rise = rev24(ut_rise + time_zone)
-    local_t_set = rev24(ut_set + time_zone)
+    local_t_rise = rev24(ut_rise + tz_offset_hours)
+    local_t_set = rev24(ut_set + tz_offset_hours)
 
     # Return sunrise and sunset
     return local_t_rise, local_t_set
@@ -174,18 +174,18 @@ def current_time_data():
     hour = time_data.hour
     minute = time_data.minute
     second = time_data.second
-    time_zone = int((time.timezone if (time.localtime().tm_isdst == 0) else time.altzone) / 60 / 60 * -1)
+    tz_offset_hours = int((time.timezone if (time.localtime().tm_isdst == 0) else time.altzone) / 60 / 60 * -1)
     latitude = float(config_file['latitude'])
     longitude = float(config_file['longitude'])
 
-    return year, month, day, hour, minute, second, time_zone, latitude, longitude
+    return year, month, day, hour, minute, second, tz_offset_hours, latitude, longitude
 
 if __name__ == '__main__':
     # Date and location information
-    year, month, day, hour, minute, second, time_zone, latitude, longitude = current_time_data()
+    year, month, day, hour, minute, second, tz_offset_hours, latitude, longitude = current_time_data()
 
     # Get the Sun's apparent location in the sky
-    azimuth, elevation = sunpos((year, month, day, hour, minute, second, time_zone), (latitude, longitude), True)
+    azimuth, elevation = sunpos((year, month, day, hour, minute, second, tz_offset_hours), (latitude, longitude), True)
 
     # Degree convert to degree, minute, second
     azimuth_degree, azimuth_minute, azimuth_second = dms(azimuth)
@@ -194,7 +194,7 @@ if __name__ == '__main__':
     longitude_degree, longitude_minute, longitude_second = dms(longitude)
 
     # Get sunrise and sunset time
-    sunrise, sunset = suninfo((year, month, day, time_zone), (latitude, longitude))
+    sunrise, sunset = suninfo((year, month, day, tz_offset_hours), (latitude, longitude))
 
     # Degree convert to degree, minute, second
     sunrise_hour, sunrise_minute, sunrise_second = dms(sunrise)
@@ -238,7 +238,7 @@ if __name__ == '__main__':
     # Output the results
     if sys.argv[-1] == "--debug":
         print(f"Current time: {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}")
-        print(f'When: {"0" if (day < 10) else ""}{day}.{"0" if (month < 10) else ""}{month}.{year} {"0" if (hour < 10) else ""}{hour}:{"0" if (minute < 10) else ""}{minute}:{"0" if (second < 10) else ""}{int(second)} UTC{"+" if (time_zone > 0) else ""}{time_zone}')
+        print(f'When: {"0" if (day < 10) else ""}{day}.{"0" if (month < 10) else ""}{month}.{year} {"0" if (hour < 10) else ""}{hour}:{"0" if (minute < 10) else ""}{minute}:{"0" if (second < 10) else ""}{int(second)} UTC{"+" if (tz_offset_hours > 0) else ""}{tz_offset_hours}')
         print(f"Where: Latitude = {latitude_degree}° {latitude_minute}' "+f'{int(latitude_second)}", Longitude = {longitude_degree}° '+f"{longitude_minute}' "+f'{int(longitude_second)}"')
         print(f"Azimuth: {azimuth_degree}° {azimuth_minute}' "+f'{int(azimuth_second)}" or {round(azimuth, 4)}')
         print(f"Elevation: {elevation_degree}° {elevation_minute}' "+f'{int(elevation_second)}" or {round(elevation, 4)}')
