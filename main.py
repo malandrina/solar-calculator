@@ -2,7 +2,6 @@ import datetime
 import time
 import json
 import os
-import pytz
 import sys
 
 from math import radians, degrees, floor, sin, cos, tan, asin, acos, atan, atan2, pi
@@ -201,8 +200,8 @@ if __name__ == '__main__':
     sunrise_hour, sunrise_minute, sunrise_second = dms(sunrise)
     sunset_hour, sunset_minute, sunset_second = dms(sunset)
 
-    # Get current time
-    tz = pytz.timezone(TIMEZONE)
+    # Get current time zone
+    tz = datetime.datetime.now().astimezone().tzinfo
 
     sunrise_str = f"{sunrise_hour}:{sunrise_minute}"
     sunset_str = f"{sunset_hour}:{sunset_minute}"
