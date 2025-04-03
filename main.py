@@ -176,69 +176,77 @@ def current_time_data():
     return year, month, day, hour, minute, second, tz_offset_hours, time_data
 
 if __name__ == '__main__':
-    # Date and location information
-    year, month, day, hour, minute, second, tz_offset_hours, now = current_time_data()
+    updated_at = None
+    seconds_per_minute = 60
+    update_interval_minutes = 15
+    update_interval_seconds = seconds_per_minute * update_interval_minutes
 
-    with open(os.path.relpath('config.json')) as json_file:
-        config_file = json.load(json_file)
-        latitude = float(config_file['latitude'])
-        longitude = float(config_file['longitude'])
+    while True:
+        # Date and location information
+        year, month, day, hour, minute, second, tz_offset_hours, now = current_time_data()
 
-    # Get the Sun's apparent location in the sky
-    azimuth, elevation = sunpos((year, month, day, hour, minute, second, tz_offset_hours), (latitude, longitude), True)
+        if not updated_at or (now - updated_at).seconds >= update_interval_seconds:
+            with open(os.path.relpath('config.json')) as json_file:
+                config_file = json.load(json_file)
+                latitude = float(config_file['latitude'])
+                longitude = float(config_file['longitude'])
 
-    # Degree convert to degree, minute, second
-    azimuth_degree, azimuth_minute, azimuth_second = dms(azimuth)
-    elevation_degree, elevation_minute, elevation_second = dms(elevation)
-    latitude_degree, latitude_minute, latitude_second = dms(latitude)
-    longitude_degree, longitude_minute, longitude_second = dms(longitude)
+            # Get the Sun's apparent location in the sky
+            azimuth, elevation = sunpos((year, month, day, hour, minute, second, tz_offset_hours), (latitude, longitude), True)
 
-    # Get sunrise and sunset time
-    sunrise, sunset = suninfo((year, month, day, tz_offset_hours), (latitude, longitude))
+            # Degree convert to degree, minute, second
+            azimuth_degree, azimuth_minute, azimuth_second = dms(azimuth)
+            elevation_degree, elevation_minute, elevation_second = dms(elevation)
+            latitude_degree, latitude_minute, latitude_second = dms(latitude)
+            longitude_degree, longitude_minute, longitude_second = dms(longitude)
 
-    # Degree convert to degree, minute, second
-    sunrise_hour, sunrise_minute, sunrise_second = dms(sunrise)
-    sunset_hour, sunset_minute, sunset_second = dms(sunset)
+            # Get sunrise and sunset time
+            sunrise, sunset = suninfo((year, month, day, tz_offset_hours), (latitude, longitude))
 
-    # Get current time zone
-    tz = datetime.timezone(datetime.timedelta(hours=tz_offset_hours))
+            # Degree convert to degree, minute, second
+            sunrise_hour, sunrise_minute, sunrise_second = dms(sunrise)
+            sunset_hour, sunset_minute, sunset_second = dms(sunset)
 
-    sunrise_str = f"{sunrise_hour}:{sunrise_minute}"
-    sunset_str = f"{sunset_hour}:{sunset_minute}"
-    midnight_str = "0:0"
-    format_str = "%H:%M"
-    now_datetime = datetime.datetime.strptime(f"{now.hour}:{now.minute}", format_str)
-    sunrise_datetime = datetime.datetime.strptime(sunrise_str, format_str)
-    sunset_datetime = datetime.datetime.strptime(sunset_str, format_str)
-    midnight_datetime = datetime.datetime.strptime(midnight_str, format_str)
+            # Get current time zone
+            tz = datetime.timezone(datetime.timedelta(hours=tz_offset_hours))
 
-    midnight_to_sunrise_delta_seconds = (sunrise_datetime - midnight_datetime).total_seconds()
-    sunrise_to_sunset_delta_seconds = (sunset_datetime - sunrise_datetime).total_seconds()
-    midnight_to_now_delta_seconds = (now_datetime - midnight_datetime).total_seconds()
+            sunrise_str = f"{sunrise_hour}:{sunrise_minute}"
+            sunset_str = f"{sunset_hour}:{sunset_minute}"
+            midnight_str = "0:0"
+            format_str = "%H:%M"
+            now_datetime = datetime.datetime.strptime(f"{now.hour}:{now.minute}", format_str)
+            sunrise_datetime = datetime.datetime.strptime(sunrise_str, format_str)
+            sunset_datetime = datetime.datetime.strptime(sunset_str, format_str)
+            midnight_datetime = datetime.datetime.strptime(midnight_str, format_str)
 
-    midnight_to_now = midnight_to_now_delta_seconds / 84600
-    midnight_to_sunrise = midnight_to_sunrise_delta_seconds / 84600
-    sunrise_to_sunset = sunrise_to_sunset_delta_seconds / 84600
-    sunset_to_midnight = (84600 - (midnight_to_sunrise_delta_seconds + sunrise_to_sunset_delta_seconds)) / 84600
+            midnight_to_sunrise_delta_seconds = (sunrise_datetime - midnight_datetime).total_seconds()
+            sunrise_to_sunset_delta_seconds = (sunset_datetime - sunrise_datetime).total_seconds()
+            midnight_to_now_delta_seconds = (now_datetime - midnight_datetime).total_seconds()
 
-    midnight_to_now_units = int(round(midnight_to_now * 96, 0))
-    midnight_to_sunrise_units = int(round(midnight_to_sunrise * 96, 0))
-    sunrise_to_sunset_units = int(round(sunrise_to_sunset * 96, 0))
-    sunset_to_midnight_units = int(round(sunset_to_midnight * 96))
+            midnight_to_now = midnight_to_now_delta_seconds / 84600
+            midnight_to_sunrise = midnight_to_sunrise_delta_seconds / 84600
+            sunrise_to_sunset = sunrise_to_sunset_delta_seconds / 84600
+            sunset_to_midnight = (84600 - (midnight_to_sunrise_delta_seconds + sunrise_to_sunset_delta_seconds)) / 84600
 
-    midnight_to_sunrise_formatted = ["="] * midnight_to_sunrise_units
-    sunrise_to_sunset_formatted = ["-"] * sunrise_to_sunset_units
-    sunset_to_midnight_formatted = ["="] * sunset_to_midnight_units
-    concatenated = midnight_to_sunrise_formatted + sunrise_to_sunset_formatted + sunset_to_midnight_formatted
-    concatenated.insert(midnight_to_now_units, "*")
-    del concatenated[midnight_to_now_units + 1]
-    print("".join(concatenated))
+            midnight_to_now_units = int(round(midnight_to_now * 96, 0))
+            midnight_to_sunrise_units = int(round(midnight_to_sunrise * 96, 0))
+            sunrise_to_sunset_units = int(round(sunrise_to_sunset * 96, 0))
+            sunset_to_midnight_units = int(round(sunset_to_midnight * 96))
 
-    # Output the results
-    if sys.argv[-1] == "--debug":
-        print(f"Current time: {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}")
-        print(f'When: {"0" if (day < 10) else ""}{day}.{"0" if (month < 10) else ""}{month}.{year} {"0" if (hour < 10) else ""}{hour}:{"0" if (minute < 10) else ""}{minute}:{"0" if (second < 10) else ""}{int(second)} UTC{"+" if (tz_offset_hours > 0) else ""}{tz_offset_hours}')
-        print(f"Where: Latitude = {latitude_degree}° {latitude_minute}' "+f'{int(latitude_second)}", Longitude = {longitude_degree}° '+f"{longitude_minute}' "+f'{int(longitude_second)}"')
-        print(f"Azimuth: {azimuth_degree}° {azimuth_minute}' "+f'{int(azimuth_second)}" or {round(azimuth, 4)}')
-        print(f"Elevation: {elevation_degree}° {elevation_minute}' "+f'{int(elevation_second)}" or {round(elevation, 4)}')
-        print(f'Sunrise = {str(0)+str(sunrise_hour) if sunrise_hour//10 == 0 else sunrise_hour}:{str(0)+str(sunrise_minute) if sunrise_minute//10 == 0 else sunrise_minute}:{str(0)+str(int(sunrise_second)) if sunrise_second//10 == 0 else int(sunrise_second)}, Sunset = {str(0)+str(sunset_hour) if sunset_hour//10 == 0 else sunset_hour}:{str(0)+str(sunset_minute) if sunset_minute//10 == 0 else sunset_minute}:{str(0)+str(int(sunset_second)) if sunset_second//10 == 0 else int(sunset_second)}')
+            midnight_to_sunrise_formatted = ["="] * midnight_to_sunrise_units
+            sunrise_to_sunset_formatted = ["-"] * sunrise_to_sunset_units
+            sunset_to_midnight_formatted = ["="] * sunset_to_midnight_units
+            concatenated = midnight_to_sunrise_formatted + sunrise_to_sunset_formatted + sunset_to_midnight_formatted
+            concatenated.insert(midnight_to_now_units, "*")
+            del concatenated[midnight_to_now_units + 1]
+            print("".join(concatenated))
+
+            # Output the results
+            if sys.argv[-1] == "--debug":
+                print(f"Current time: {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}")
+                print(f'When: {"0" if (day < 10) else ""}{day}.{"0" if (month < 10) else ""}{month}.{year} {"0" if (hour < 10) else ""}{hour}:{"0" if (minute < 10) else ""}{minute}:{"0" if (second < 10) else ""}{int(second)} UTC{"+" if (tz_offset_hours > 0) else ""}{tz_offset_hours}')
+                print(f"Where: Latitude = {latitude_degree}° {latitude_minute}' "+f'{int(latitude_second)}", Longitude = {longitude_degree}° '+f"{longitude_minute}' "+f'{int(longitude_second)}"')
+                print(f"Azimuth: {azimuth_degree}° {azimuth_minute}' "+f'{int(azimuth_second)}" or {round(azimuth, 4)}')
+                print(f"Elevation: {elevation_degree}° {elevation_minute}' "+f'{int(elevation_second)}" or {round(elevation, 4)}')
+                print(f'Sunrise = {str(0)+str(sunrise_hour) if sunrise_hour//10 == 0 else sunrise_hour}:{str(0)+str(sunrise_minute) if sunrise_minute//10 == 0 else sunrise_minute}:{str(0)+str(int(sunrise_second)) if sunrise_second//10 == 0 else int(sunrise_second)}, Sunset = {str(0)+str(sunset_hour) if sunset_hour//10 == 0 else sunset_hour}:{str(0)+str(sunset_minute) if sunset_minute//10 == 0 else sunset_minute}:{str(0)+str(int(sunset_second)) if sunset_second//10 == 0 else int(sunset_second)}')
+            updated_at = datetime.datetime.now()
