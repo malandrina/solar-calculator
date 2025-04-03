@@ -164,9 +164,6 @@ def rev24(n):
 
 def current_time_data():
 
-    with open(os.path.relpath('config.json')) as json_file:
-        config_file = json.load(json_file)
-
     time_data = dt.now()
     year = time_data.year
     month = time_data.month
@@ -175,14 +172,17 @@ def current_time_data():
     minute = time_data.minute
     second = time_data.second
     tz_offset_hours = int((time.timezone if (time.localtime().tm_isdst == 0) else time.altzone) / 60 / 60 * -1)
-    latitude = float(config_file['latitude'])
-    longitude = float(config_file['longitude'])
 
-    return year, month, day, hour, minute, second, tz_offset_hours, latitude, longitude
+    return year, month, day, hour, minute, second, tz_offset_hours, time_data
 
 if __name__ == '__main__':
     # Date and location information
-    year, month, day, hour, minute, second, tz_offset_hours, latitude, longitude = current_time_data()
+    year, month, day, hour, minute, second, tz_offset_hours, now = current_time_data()
+
+    with open(os.path.relpath('config.json')) as json_file:
+        config_file = json.load(json_file)
+        latitude = float(config_file['latitude'])
+        longitude = float(config_file['longitude'])
 
     # Get the Sun's apparent location in the sky
     azimuth, elevation = sunpos((year, month, day, hour, minute, second, tz_offset_hours), (latitude, longitude), True)
